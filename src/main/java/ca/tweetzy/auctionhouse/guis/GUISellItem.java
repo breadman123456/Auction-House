@@ -35,11 +35,8 @@ public class GUISellItem extends AbstractPlaceholderGui {
 	private final AuctionPlayer auctionPlayer;
 	private ItemStack itemToBeListed;
 
-	private double buyNowPrice;
-	private double bidStartPrice;
-	private double bidIncrementPrice;
-	private boolean isBiddingItem;
-	private boolean isAllowingBuyNow;
+	private double buyNowPrice, bidStartPrice, bidIncrementPrice;
+	private boolean isBiddingItem, isAllowingBuyNow;
 	private int auctionTime;
 
 
@@ -61,9 +58,8 @@ public class GUISellItem extends AbstractPlaceholderGui {
 		setRows(Settings.ALLOW_PLAYERS_TO_DEFINE_AUCTION_TIME.getBoolean() ? 6 : 5);
 
 		setOnOpen(open -> {
-			// Check if they are already using a sell gui
 			if (ChatPrompt.isRegistered(open.player)) {
-				AuctionHouse.getInstance().getLocale().getMessage("general.finishenteringprice").sendPrefixedMessage(open.player);
+				open.player.sendMessage(Color.translate("&cPlease enter the new price first.")
 				open.gui.close();
 			}
 
@@ -72,46 +68,28 @@ public class GUISellItem extends AbstractPlaceholderGui {
 				return;
 			}
 
-			ItemStack held = AuctionHouse.getInstance().getAuctionPlayerManager().getSellHolding().get(open.player.getUniqueId());
-			if (held == null) {
-				setAcceptsItems(true);
-			} else {
-				setAcceptsItems(held.getType() == XMaterial.AIR.parseMaterial());
-			}
+			ItemStack held = mAuction.getInstance().getAuctionPlayerManager().getSellHolding().get(open.player.getUniqueId());
+			if (held == null) setAcceptsItems(true);
+			else setAcceptsItems(held.getType() == XMaterial.AIR.parseMaterial());
 
-			AuctionHouse.getInstance().getAuctionPlayerManager().addToUsingSellGUI(open.player.getUniqueId());
+			mAuction.getInstance().getAuctionPlayerManager().addToUsingSellGUI(open.player.getUniqueId());
 		});
 
 		setOnClose(close -> {
-			if (!AuctionHouse.getInstance().getAuctionPlayerManager().getUsingSellGUI().contains(close.player.getUniqueId())) {
-				ItemStack toGiveBack = AuctionHouse.getInstance().getAuctionPlayerManager().getSellHolding().get(close.player.getUniqueId());
-				PlayerUtils.giveItem(close.player, toGiveBack); // this could give them air
+			if (!mAuction.getInstance().getAuctionPlayerManager().getUsingSellGUI().contains(close.player.getUniqueId())) {
+				ItemStack toGiveBack = mAuction.getInstance().getAuctionPlayerManager().getSellHolding().get(close.player.getUniqueId());
+				PlayerUtils.giveItem(close.player, toGiveBack); 
 
 				try {
-					if (toGiveBack.getType() == XMaterial.AIR.parseMaterial()) {
-						if (getItem(1, 4) != null && getItem(1, 4).getType() != XMaterial.AIR.parseMaterial()) {
-							PlayerUtils.giveItem(close.player, getItem(1, 4));
-						}
-					}
-				} catch (NullPointerException ignored) {
-					// stfu
-				}
+					if (toGiveBack.getType() == XMaterial.AIR.parseMaterial()) if (getItem(1, 4) != null && getItem(1, 4).getType() != XMaterial.AIR.parseMaterial()) PlayerUtils.giveItem(close.player, getItem(1, 4));
+				} catch (NullPointerException ignored) {}
 
-				AuctionHouse.getInstance().getAuctionPlayerManager().removeItemFromSellHolding(close.player.getUniqueId());
-				if (Settings.SELL_MENU_CLOSE_SENDS_TO_LISTING.getBoolean()) {
-					close.manager.showGUI(close.player, new GUIAuctionHouse(this.auctionPlayer));
-				}
+				mAuction.getInstance().getAuctionPlayerManager().removeItemFromSellHolding(close.player.getUniqueId());
+				close.manager.showGUI(close.player, new GUIAuctionHouse(this.auctionPlayer));
 			}
 		});
 
-		if (Settings.FORCE_AUCTION_USAGE.getBoolean()) {
-			this.isBiddingItem = true;
-		}
-
-		if (!Settings.ALLOW_USAGE_OF_BUY_NOW_SYSTEM.getBoolean()) {
-			this.isBiddingItem = true;
-		}
-
+		this.isBiddingItem = true;
 		setUnlocked(1, 4);
 		setUnlockedRange(54, 89);
 		draw();
@@ -123,13 +101,10 @@ public class GUISellItem extends AbstractPlaceholderGui {
 
 	private void draw() {
 		reset();
-
-		// the draw item that is being listed
 		setButton(1, 4, this.itemToBeListed, e -> {
 			if (e.clickType == ClickType.RIGHT || e.clickType == ClickType.NUMBER_KEY) e.event.setCancelled(true);
-			// Is the user selling with an item in hand?
-			if (AuctionHouse.getInstance().getAuctionPlayerManager().getSellHolding().containsKey(e.player.getUniqueId())) {
-				if (AuctionHouse.getInstance().getAuctionPlayerManager().getSellHolding().get(e.player.getUniqueId()).getType() != XMaterial.AIR.parseMaterial()) {
+			if (mAuction.getInstance().getAuctionPlayerManager().getSellHolding().containsKey(e.player.getUniqueId())) {
+				if (mAuction.getInstance().getAuctionPlayerManager().getSellHolding().get(e.player.getUniqueId()).getType() != XMaterial.AIR.parseMaterial()) {
 					e.event.setCancelled(true);
 				}
 			}
@@ -137,7 +112,6 @@ public class GUISellItem extends AbstractPlaceholderGui {
 			this.itemToBeListed = e.clickedItem;
 		});
 
-		if (Settings.ALLOW_PLAYERS_TO_DEFINE_AUCTION_TIME.getBoolean()) {
 			long[] times = AuctionAPI.getInstance().getRemainingTimeValues(this.auctionTime);
 
 			setButton(4, 2, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_SELL_ITEMS_LIST_TIME_ITEM.getString(), Settings.GUI_SELL_ITEMS_LIST_TIME_NAME.getString(), Settings.GUI_SELL_ITEMS_LIST_TIME_LORE.getStringList(), new HashMap<String, Object>() {{
@@ -170,9 +144,8 @@ public class GUISellItem extends AbstractPlaceholderGui {
 				PlayerChatInput<Long> input = builder.build();
 				input.start();
 			});
-		}
 
-		if (Settings.ALLOW_USAGE_OF_BUY_NOW_SYSTEM.getBoolean() && this.isAllowingBuyNow) {
+		if (this.isAllowingBuyNow) {
 			setButton(3, 1, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_SELL_ITEMS_BUY_NOW_ITEM.getString(), Settings.GUI_SELL_ITEMS_BUY_NOW_NAME.getString(), Settings.GUI_SELL_ITEMS_BUY_NOW_LORE.getStringList(), new HashMap<String, Object>() {{
 				put("%buy_now_price%", AuctionAPI.getInstance().formatNumber(buyNowPrice));
 			}}), ClickType.LEFT, e -> {
@@ -258,16 +231,13 @@ public class GUISellItem extends AbstractPlaceholderGui {
 				});
 			}
 
-			if (Settings.ALLOW_USAGE_OF_BUY_NOW_SYSTEM.getBoolean()) {
 				setButton(3, 6, ConfigurationItemHelper.createConfigurationItem(this.isAllowingBuyNow ? Settings.GUI_SELL_ITEMS_BUY_NOW_ENABLED_ITEM.getString() : Settings.GUI_SELL_ITEMS_BUY_NOW_DISABLED_ITEM.getString(), this.isAllowingBuyNow ? Settings.GUI_SELL_ITEMS_BUY_NOW_ENABLED_NAME.getString() : Settings.GUI_SELL_ITEMS_BUY_NOW_DISABLED_NAME.getString(), this.isAllowingBuyNow ? Settings.GUI_SELL_ITEMS_BUY_NOW_ENABLED_LORE.getStringList() : Settings.GUI_SELL_ITEMS_BUY_NOW_DISABLED_LORE.getStringList(), null), ClickType.LEFT, e -> {
 					this.isAllowingBuyNow = !this.isAllowingBuyNow;
 					setTheItemToBeListed();
 					draw();
 				});
-			}
 		}
 
-		if (Settings.ALLOW_USAGE_OF_BID_SYSTEM.getBoolean() || !Settings.ALLOW_USAGE_OF_BUY_NOW_SYSTEM.getBoolean()) {
 			setButton(3, 5, ConfigurationItemHelper.createConfigurationItem(this.isBiddingItem ? Settings.GUI_SELL_ITEMS_BIDDING_ENABLED_ITEM.getString() : Settings.GUI_SELL_ITEMS_BIDDING_DISABLED_ITEM.getString(), this.isBiddingItem ? Settings.GUI_SELL_ITEMS_BIDDING_ENABLED_NAME.getString() : Settings.GUI_SELL_ITEMS_BIDDING_DISABLED_NAME.getString(), this.isBiddingItem ? Settings.GUI_SELL_ITEMS_BIDDING_ENABLED_LORE.getStringList() : Settings.GUI_SELL_ITEMS_BIDDING_DISABLED_LORE.getStringList(), null), e -> {
 				if (!Settings.FORCE_AUCTION_USAGE.getBoolean()) {
 					if (Settings.ALLOW_USAGE_OF_BUY_NOW_SYSTEM.getBoolean()) {
@@ -277,7 +247,6 @@ public class GUISellItem extends AbstractPlaceholderGui {
 				setTheItemToBeListed();
 				draw();
 			});
-		}
 
 		setButton(3, 7, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_SELL_ITEMS_CONFIRM_LISTING_ITEM.getString(), Settings.GUI_SELL_ITEMS_CONFIRM_LISTING_NAME.getString(), Settings.GUI_SELL_ITEMS_CONFIRM_LISTING_LORE.getStringList(), null), e -> {
 			// if the item in the sell slot is null then stop the listing
