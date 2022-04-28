@@ -18,14 +18,11 @@ public class SoundManager {
 	private static SoundManager instance;
 
 	public static SoundManager getInstance() {
-		if (instance == null) {
-			instance = new SoundManager();
-		}
+		if (instance == null) instance = new SoundManager();
 		return instance;
 	}
 
-	private SoundManager() {
-	}
+	private SoundManager() {}
 
 	public void playSound(Player player, String sound, float volume, float pitch) {
 		player.playSound(player.getLocation(), XSound.matchXSound(sound).get().parseSound(), volume, pitch);
@@ -36,7 +33,7 @@ public class SoundManager {
 	}
 
 	public void playSound(Player player, String sound, float volume, float pitch, int delay) {
-		Bukkit.getServer().getScheduler().runTaskLater(AuctionHouse.getInstance(), () -> playSound(player, sound, volume, pitch), delay);
+		mAuction.getInstance().getServer().getScheduler().runTaskLater(mAuction.getInstance(), () -> playSound(player, sound, volume, pitch), delay);
 	}
 
 
