@@ -26,15 +26,10 @@ public class ConfigurationItemHelper {
 		meta.setDisplayName(TextUtils.formatText(title));
 
 		if (replacements != null) {
-			for (String key : replacements.keySet()) {
-				if (title.contains(key)) title = title.replace(key, String.valueOf(replacements.get(key)));
-			}
-
+			for (String key : replacements.keySet()) if (title.contains(key)) title = title.replace(key, String.valueOf(replacements.get(key)));
 			for (int i = 0; i < lore.size(); i++) {
 				for (String key : replacements.keySet()) {
-					if (lore.get(i).contains(key)) {
-						lore.set(i, lore.get(i).replace(key, String.valueOf(replacements.get(key))));
-					}
+					if (lore.get(i).contains(key)) lore.set(i, lore.get(i).replace(key, String.valueOf(replacements.get(key))));
 				}
 			}
 		}
@@ -43,11 +38,7 @@ public class ConfigurationItemHelper {
 		meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_POTION_EFFECTS);
 		meta.setLore(lore.stream().map(TextUtils::formatText).collect(Collectors.toList()));
 		stack.setItemMeta(meta);
-		if (nbtData != null) {
-			for (String nbt : nbtData) {
-				stack = NBTEditor.set(stack, nbt.split(";")[1], nbt.split(";")[0]);
-			}
-		}
+		if (nbtData != null) for (String nbt : nbtData) stack = NBTEditor.set(stack, nbt.split(";")[1], nbt.split(";")[0]);
 		return stack;
 	}
 
