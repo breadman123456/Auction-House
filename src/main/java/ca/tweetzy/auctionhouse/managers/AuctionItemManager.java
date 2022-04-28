@@ -17,31 +17,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AuctionItemManager {
 
-	@Getter
-	private final ConcurrentHashMap<UUID, AuctionedItem> items = new ConcurrentHashMap<>();
-
-	/**
-	 * Items that are in the garbage bin are essentially marked for disposal
-	 */
-	@Getter
-	private final ConcurrentHashMap<UUID, AuctionedItem> garbageBin = new ConcurrentHashMap<>();
-
-	@Getter
-	private final ConcurrentHashMap<UUID, AuctionedItem> deletedItems = new ConcurrentHashMap<>();
+	@Getter private final ConcurrentHashMap<UUID, AuctionedItem> items = new ConcurrentHashMap<>();
+	@Getter private final ConcurrentHashMap<UUID, AuctionedItem> garbageBin = new ConcurrentHashMap<>();
+	@Getter private final ConcurrentHashMap<UUID, AuctionedItem> deletedItems = new ConcurrentHashMap<>();
 
 
 	public void start() {
-		AuctionHouse.getInstance().getDataManager().getItems((error, results) -> {
-			if (error == null) {
-				for (AuctionedItem item : results) {
-					addAuctionItem(item);
-				}
-			}
+		mAuction.getInstance().getDataManager().getItems((error, results) -> {
+			if (error == null) for (AuctionedItem item : results) addAuctionItem(item);
 		});
 	}
 
 	public void end() {
-		AuctionHouse.getInstance().getDataManager().updateItems(this.items.values(), null);
+		mAuction.getInstance().getDataManager().updateItems(this.items.values(), null);
 	}
 
 	public void addAuctionItem(@NonNull AuctionedItem auctionedItem) {
