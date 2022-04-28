@@ -44,9 +44,7 @@ public class TransactionManager {
 		Iterator<Map.Entry<UUID, Transaction>> iterator = this.transactions.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry<UUID, Transaction> entry = iterator.next();
-			if (entry.getValue().getBuyer().equals(buyer)) {
-				total++;
-			}
+			if (entry.getValue().getBuyer().equals(buyer)) total++;
 		}
 		return total;
 	}
@@ -56,9 +54,7 @@ public class TransactionManager {
 		Iterator<Map.Entry<UUID, Transaction>> iterator = this.transactions.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry<UUID, Transaction> entry = iterator.next();
-			if (entry.getValue().getSeller().equals(seller)) {
-				total++;
-			}
+			if (entry.getValue().getSeller().equals(seller)) total++;
 		}
 		return total;
 	}
@@ -80,12 +76,8 @@ public class TransactionManager {
 	}
 
 	public void loadTransactions() {
-		AuctionHouse.getInstance().getDataManager().getTransactions((error, results) -> {
-			if (error == null) {
-				for (Transaction transaction : results) {
-					addTransaction(transaction);
-				}
-			}
+		mAuction.getInstance().getDataManager().getTransactions((error, results) -> {
+			if (error == null) for (Transaction transaction : results) addTransaction(transaction);
 		});
 	}
 }
