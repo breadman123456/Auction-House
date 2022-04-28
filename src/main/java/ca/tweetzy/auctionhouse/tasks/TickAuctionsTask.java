@@ -32,12 +32,11 @@ public class TickAuctionsTask extends BukkitRunnable {
 	private static TickAuctionsTask instance;
 	private static long clock;
 
-
 	public static TickAuctionsTask startTask() {
 		if (instance == null) {
 			clock = 0L;
 			instance = new TickAuctionsTask();
-			instance.runTaskTimerAsynchronously(AuctionHouse.getInstance(), 0, (long) 20 * Settings.TICK_UPDATE_TIME.getInt());
+			instance.runTaskTimerAsynchronously(mAuction.getInstance(), 0, (long) 20 * 1);
 		}
 		return instance;
 	}
@@ -46,7 +45,7 @@ public class TickAuctionsTask extends BukkitRunnable {
 	public void run() {
 		clock += Settings.TICK_UPDATE_TIME.getInt();
 
-		Set<Map.Entry<UUID, AuctionedItem>> entrySet = AuctionHouse.getInstance().getAuctionItemManager().getItems().entrySet();
+		Set<Map.Entry<UUID, AuctionedItem>> entrySet = mAuction.getInstance().getAuctionItemManager().getItems().entrySet();
 		Iterator<Map.Entry<UUID, AuctionedItem>> auctionItemIterator = entrySet.iterator();
 
 
@@ -55,37 +54,28 @@ public class TickAuctionsTask extends BukkitRunnable {
 			AuctionedItem auctionItem = entry.getValue();
 			ItemStack itemStack = auctionItem.getItem();
 
-			if (AuctionHouse.getInstance().getAuctionItemManager().getGarbageBin().containsKey(auctionItem.getId())) {
-				AuctionHouse.getInstance().getAuctionItemManager().getGarbageBin().remove(auctionItem.getId());
-				AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().put(auctionItem.getId(), auctionItem);
+			if (mAuction.getInstance().getAuctionItemManager().getGarbageBin().containsKey(auctionItem.getId())) {
+				mAuction.getInstance().getAuctionItemManager().getGarbageBin().remove(auctionItem.getId());
+				mAuction.getInstance().getAuctionItemManager().getDeletedItems().put(auctionItem.getId(), auctionItem);
 				auctionItemIterator.remove();
 				continue;
 			}
 
-			// begin the scuffed deletion
-			if (!AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().keySet().isEmpty()) {
-				if (Settings.GARBAGE_DELETION_TIMED_MODE.getBoolean() && clock % Settings.GARBAGE_DELETION_TIMED_DELAY.getInt() == 0) {
-					AuctionHouse.getInstance().getDataManager().deleteItems(AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().values().stream().map(AuctionedItem::getId).collect(Collectors.toList()));
-					if (!Settings.DISABLE_CLEANUP_MSG.getBoolean())
-						AuctionHouse.getInstance().getLocale().newMessage(TextUtils.formatText("&aCleaned a total of &e" + AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().size() + "&a items.")).sendPrefixedMessage(Bukkit.getConsoleSender());
-					AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().clear();
+			if (!mAuction.getInstance().getAuctionItemManager().getDeletedItems().keySet().isEmpty()) {
+				if (clock % 60 == 0) {
+					mAuction.getInstance().getDataManager().deleteItems(AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().values().stream().map(AuctionedItem::getId).collect(Collectors.toList()));
+					mAuction.getInstance().getAuctionItemManager().getDeletedItems().clear();
 				} else {
-					if (AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().size() >= Settings.GARBAGE_DELETION_MAX_ITEMS.getInt()) {
-						AuctionHouse.getInstance().getDataManager().deleteItemsAsync(AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().values().stream().map(AuctionedItem::getId).collect(Collectors.toList()));
-						if (!Settings.DISABLE_CLEANUP_MSG.getBoolean())
-							AuctionHouse.getInstance().getLocale().newMessage(TextUtils.formatText("&aCleaned a total of &e" + AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().size() + "&a items.")).sendPrefixedMessage(Bukkit.getConsoleSender());
-						AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().clear();
+					if (mAuction.getInstance().getAuctionItemManager().getDeletedItems().size() >= Settings.GARBAGE_DELETION_MAX_ITEMS.getInt()) {
+						mAuction.getInstance().getDataManager().deleteItemsAsync(AuctionHouse.getInstance().getAuctionItemManager().getDeletedItems().values().stream().map(AuctionedItem::getId).collect(Collectors.toList()));
+						mAuction.getInstance().getAuctionItemManager().getDeletedItems().clear();
 					}
 				}
 			}
 
-			// end the scuffed deletion
-
 			if (auctionItem.isInfinite()) continue;
-
 			long timeRemaining = (auctionItem.getExpiresAt() - System.currentTimeMillis()) / 1000;
 
-			// broadcast ending
 			if (!auctionItem.isExpired()) {
 				if (Settings.BROADCAST_AUCTION_ENDING.getBoolean()) {
 					if (timeRemaining <= Settings.BROADCAST_AUCTION_ENDING_AT_TIME.getInt() && timeRemaining % 10 == 0 && timeRemaining != 0) {
@@ -98,15 +88,9 @@ public class TickAuctionsTask extends BukkitRunnable {
 			}
 
 			if (timeRemaining <= 0 && !auctionItem.isExpired()) {
-
-				// the owner is the highest bidder, so just expire
 				if (auctionItem.getHighestBidder().equals(auctionItem.getOwner())) {
 					auctionItem.setExpired(true);
-					if (auctionItem.isExpired()) {
-						AuctionHouse.getInstance().getAuctionStatManager().insertOrUpdate(Bukkit.getOfflinePlayer(auctionItem.getOwner()), new AuctionStat<>(
-								0, 0, 1, 0D, 0D
-						));
-					}
+					if (auctionItem.isExpired()) AuctionHouse.getInstance().getAuctionStatManager().insertOrUpdate(Bukkit.getOfflinePlayer(auctionItem.getOwner()), new AuctionStat<>(0, 0, 1, 0D, 0D));
 					continue;
 				}
 
@@ -124,30 +108,18 @@ public class TickAuctionsTask extends BukkitRunnable {
 				AuctionHouse.getInstance().getServer().getPluginManager().callEvent(auctionEndEvent);
 				if (auctionEndEvent.isCancelled()) continue;
 
-
 				AuctionAPI.getInstance().withdrawBalance(auctionWinner, Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice);
 				AuctionAPI.getInstance().depositBalance(Bukkit.getOfflinePlayer(auctionItem.getOwner()), Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax);
 
-				// alert seller and buyer
 				if (Bukkit.getOfflinePlayer(auctionItem.getOwner()).isOnline()) {
-					AuctionHouse.getInstance().getLocale().getMessage("auction.itemsold")
-							.processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack))
-							.processPlaceholder("amount", itemStack.getAmount())
-							.processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax))
-							.processPlaceholder("buyer_name", Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()).getName())
-							.processPlaceholder("buyer_displayname", AuctionAPI.getInstance().getDisplayName(Bukkit.getOfflinePlayer(auctionItem.getHighestBidder())))
-							.sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
-					AuctionHouse.getInstance().getLocale().getMessage("pricing.moneyadd").processPlaceholder("player_balance", AuctionAPI.getInstance().formatNumber(EconomyManager.getBalance(Bukkit.getOfflinePlayer(auctionItem.getOwner())))).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax)).sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
+					mAuction.getInstance().getLocale().getMessage("auction.itemsold").processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack)).processPlaceholder("amount", itemStack.getAmount()).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax)).processPlaceholder("buyer_name", Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()).getName()).processPlaceholder("buyer_displayname", AuctionAPI.getInstance().getDisplayName(Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()))).sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
+					mAuction.getInstance().getLocale().getMessage("pricing.moneyadd").processPlaceholder("player_balance", AuctionAPI.getInstance().formatNumber(EconomyManager.getBalance(Bukkit.getOfflinePlayer(auctionItem.getOwner())))).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax)).sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
 				}
 
 				if (auctionWinner.isOnline()) {
 					assert auctionWinner.getPlayer() != null;
-					AuctionHouse.getInstance().getLocale().getMessage("auction.bidwon")
-							.processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack))
-							.processPlaceholder("amount", itemStack.getAmount())
-							.processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice))
-							.sendPrefixedMessage(auctionWinner.getPlayer());
-					AuctionHouse.getInstance().getLocale().getMessage("pricing.moneyremove").processPlaceholder("player_balance", AuctionAPI.getInstance().formatNumber(EconomyManager.getBalance(auctionWinner.getPlayer()))).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice)).sendPrefixedMessage(auctionWinner.getPlayer());
+					mAuction.getInstance().getLocale().getMessage("auction.bidwon").processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack)).processPlaceholder("amount", itemStack.getAmount()).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice)).sendPrefixedMessage(auctionWinner.getPlayer());
+					mAuction.getInstance().getLocale().getMessage("pricing.moneyremove").processPlaceholder("player_balance", AuctionAPI.getInstance().formatNumber(EconomyManager.getBalance(auctionWinner.getPlayer()))).processPlaceholder("price", AuctionAPI.getInstance().formatNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice)).sendPrefixedMessage(auctionWinner.getPlayer());
 
 					if (Settings.ALLOW_PURCHASE_IF_INVENTORY_FULL.getBoolean()) {
 						if (Settings.SYNCHRONIZE_ITEM_ADD.getBoolean())
@@ -160,12 +132,8 @@ public class TickAuctionsTask extends BukkitRunnable {
 					}
 
 					if (auctionWinner.getPlayer().getInventory().firstEmpty() != -1) {
-						if (Settings.SYNCHRONIZE_ITEM_ADD.getBoolean())
-							AuctionHouse.newChain().sync(() -> PlayerUtils.giveItem(auctionWinner.getPlayer(), itemStack)).execute();
-						else
-							PlayerUtils.giveItem(auctionWinner.getPlayer(), itemStack);
-
-						AuctionHouse.getInstance().getAuctionItemManager().sendToGarbage(auctionItem);
+						AuctionHouse.newChain().sync(() -> PlayerUtils.giveItem(auctionWinner.getPlayer(), itemStack)).execute();
+						mAuction.getInstance().getAuctionItemManager().sendToGarbage(auctionItem);
 						continue;
 					}
 				}
@@ -176,5 +144,4 @@ public class TickAuctionsTask extends BukkitRunnable {
 			}
 		}
 	}
-
 }
