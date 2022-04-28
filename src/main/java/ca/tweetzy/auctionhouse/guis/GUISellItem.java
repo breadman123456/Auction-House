@@ -63,7 +63,7 @@ public class GUISellItem extends AbstractPlaceholderGui {
 				open.gui.close();
 			}
 
-			if (AuctionHouse.getInstance().getAuctionBanManager().checkAndHandleBan(open.player)) {
+			if (mAuction.getInstance().getAuctionBanManager().checkAndHandleBan(open.player)) {
 				open.gui.close();
 				return;
 			}
