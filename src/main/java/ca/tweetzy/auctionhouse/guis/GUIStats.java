@@ -29,15 +29,15 @@ public final class GUIStats extends AbstractPlaceholderGui {
 		setUseLockedCells(true);
 		setAcceptsItems(false);
 		setAllowDrops(false);
-		setRows(3);
+		setRows(3); 
 		draw();
 	}
 
 	private void draw() {
 
-		final AuctionStat<Integer, Integer, Integer, Double, Double> playerStats = AuctionHouse.getInstance().getAuctionStatManager().getPlayerStats(this.player);
+		final AuctionStat<Integer, Integer, Integer, Double, Double> playerStats = mAuction.getInstance().getAuctionStatManager().getPlayerStats(this.player);
 
-		setItem(1, 3, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_STATS_ITEMS_PERSONAL_USE_HEAD.getBoolean() ? AuctionAPI.getInstance().getPlayerHead(player.getName()) : Settings.GUI_STATS_ITEMS_PERSONAL_ITEM.getMaterial().parseItem(), Settings.GUI_STATS_ITEMS_PERSONAL_NAME.getString(), Settings.GUI_STATS_ITEMS_PERSONAL_LORE.getStringList(), new HashMap<String, Object>() {{
+		setItem(1, 3, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_STATS_ITEMS_PERSONAL_USE_HEAD.getBoolean() ? AuctionAPI.getInstance().getPlayerHead(player.getName()) : Settings.GUI_STATS_ITEMS_PERSONAL_ITEM.getMaterial().parseItem(), Settings.GUI_STATS_ITEMS_PERSONAL_NAME.getString(), Settings.GUI_STATS_ITEMS_PERSONAL_LORE.getStringList(), new HashMap<String, Object>() {{ 
 			put("%auctions_created%", playerStats.getCreated());
 			put("%auctions_sold%", playerStats.getSold());
 			put("%auctions_expired%", playerStats.getExpired());
@@ -46,9 +46,9 @@ public final class GUIStats extends AbstractPlaceholderGui {
 		}}));
 
 		setItem(1, 5, ConfigurationItemHelper.createConfigurationItem(Settings.GUI_STATS_ITEMS_GLOBAL_ITEM.getString(), Settings.GUI_STATS_ITEMS_GLOBAL_NAME.getString(), Settings.GUI_STATS_ITEMS_GLOBAL_LORE.getStringList(), new HashMap<String, Object>() {{
-			put("%auctions_created%", (int) AuctionHouse.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.CREATED));
-			put("%auctions_sold%", (int) AuctionHouse.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.SOLD));
-			put("%auctions_expired%", (int) AuctionHouse.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.EXPIRED));
+			put("%auctions_created%", (int) mAuction.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.CREATED));
+			put("%auctions_sold%", (int) mAuction.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.SOLD));
+			put("%auctions_expired%", (int) mAuction.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.EXPIRED));
 			put("%auctions_money_spent%", AuctionAPI.getInstance().formatNumber(AuctionHouse.getInstance().getAuctionStatManager().getGlobalStat(AuctionStatManager.GlobalAuctionStatType.SPENT)));
 		}}));
 	}
