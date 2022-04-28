@@ -1,6 +1,5 @@
 package ca.tweetzy.auctionhouse.helpers;
 
-import ca.tweetzy.core.compatibility.ServerVersion;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -13,6 +12,6 @@ import org.bukkit.inventory.ItemStack;
 public class PlayerHelper {
 
 	public static ItemStack getHeldItem(Player player) {
-		return ServerVersion.isServerVersionAbove(ServerVersion.V1_8) ? player.getInventory().getItemInMainHand() : player.getInventory().getItemInHand();
+		return player.getInventory().getItemInMainHand();
 	}
 }
