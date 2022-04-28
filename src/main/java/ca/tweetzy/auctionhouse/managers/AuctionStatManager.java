@@ -18,20 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AuctionStatManager {
 
 	public static enum GlobalAuctionStatType {
-		CREATED,
-		EXPIRED,
-		SOLD,
-		SPENT
+		CREATED, EXPIRED, SOLD, SPENT
 	}
 
-	@Getter
-	private final ConcurrentHashMap<UUID, AuctionStat<Integer, Integer, Integer, Double, Double>> stats = new ConcurrentHashMap<>();
+	@Getter private final ConcurrentHashMap<UUID, AuctionStat<Integer, Integer, Integer, Double, Double>> stats = new ConcurrentHashMap<>();
 
 	public void loadStats() {
 		AuctionHouse.getInstance().getDataManager().getStats((error, stats) -> {
-			if (error == null) {
-				this.stats.putAll(stats);
-			}
+			if (error == null) this.stats.putAll(stats);
 		});
 	}
 
@@ -59,7 +53,7 @@ public final class AuctionStatManager {
 	}
 
 	public void saveStats() {
-		AuctionHouse.getInstance().getDataManager().updateStats(this.stats, null);
+		mAuction.getInstance().getDataManager().updateStats(this.stats, null);
 	}
 
 	public void insertOrUpdate(final OfflinePlayer player, final AuctionStat<Integer, Integer, Integer, Double, Double> stats) {
