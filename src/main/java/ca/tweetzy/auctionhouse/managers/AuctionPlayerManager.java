@@ -61,7 +61,7 @@ public class AuctionPlayerManager {
 	}
 
 	public void addCooldown(UUID uuid) {
-		this.cooldowns.put(uuid, System.currentTimeMillis() + (long) 1000 * Settings.REFRESH_COOL_DOWN.getInt());
+		this.cooldowns.put(uuid, System.currentTimeMillis() + (long) 1000 * 2);
 	}
 
 	public HashMap<UUID, Long> getCooldowns() {
