@@ -22,18 +22,9 @@ public class MaterialCategorizer {
 		if (material.isEdible()) return AuctionItemCategory.FOOD;
 		if (material.isBlock()) return AuctionItemCategory.BLOCKS;
 		if (material == XMaterial.ENCHANTED_BOOK.parseMaterial()) return AuctionItemCategory.ENCHANTS;
-
-		// Armor filter
-		if (material.name().endsWith("_HELMET") || material.name().endsWith("_CHESTPLATE") || material.name().endsWith("_LEGGINGS") || material.name().endsWith("_BOOTS"))
-			return AuctionItemCategory.ARMOR;
-
-		// Weapon Filter
-		if (material.name().endsWith("_SWORD") || material.name().equals("BOW") || material.name().equals("TRIDENT") || material.name().equals("CROSSBOW"))
-			return AuctionItemCategory.WEAPONS;
-
-		// Tool Filter
-		if (material.name().endsWith("_AXE") || material.name().endsWith("_PICKAXE") || material.name().endsWith("_HOE") || material.name().endsWith("SHOVEL"))
-			return AuctionItemCategory.TOOLS;
+		if (material.name().endsWith("_HELMET") || material.name().endsWith("_CHESTPLATE") || material.name().endsWith("_LEGGINGS") || material.name().endsWith("_BOOTS")) return AuctionItemCategory.ARMOR;
+		if (material.name().endsWith("_SWORD") || material.name().equals("BOW") || material.name().equals("TRIDENT") || material.name().equals("CROSSBOW")) return AuctionItemCategory.WEAPONS;
+		if (material.name().endsWith("_AXE") || material.name().endsWith("_PICKAXE") || material.name().endsWith("_HOE") || material.name().endsWith("SHOVEL")) return AuctionItemCategory.TOOLS;
 		return AuctionItemCategory.MISC;
 	}
 }
