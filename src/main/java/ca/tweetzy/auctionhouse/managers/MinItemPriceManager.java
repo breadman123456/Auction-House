@@ -38,10 +38,8 @@ public final class MinItemPriceManager {
 
 	public void loadMinPrices() {
 		this.minPrices.clear();
-
-		AuctionHouse.getInstance().getDataManager().getMinItemPrices((error, items) -> {
-			if (error == null)
-				items.forEach(this::addItem);
+		mAuction.getInstance().getDataManager().getMinItemPrices((error, items) -> {
+			if (error == null) items.forEach(this::addItem);
 		});
 	}
 }
