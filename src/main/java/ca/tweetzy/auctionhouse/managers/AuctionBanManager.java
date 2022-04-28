@@ -40,17 +40,18 @@ public class AuctionBanManager {
 				removeBan(player.getUniqueId());
 				return false;
 			}
-			AuctionHouse.getInstance().getLocale().getMessage("bans.remainingtime").processPlaceholder("ban_amount", TimeUtils.makeReadable(time - System.currentTimeMillis())).sendPrefixedMessage(player);
+			player.sendMessage(Color.translate("&cYour account has been temporarily suspended from the auction house.");
+			player.sendMessage(Color.translate("&c&oYour punishment will expire in: " + TimeUtils.makeReadable(time - System.currentTimeMillis()) + ".");
 			return true;
 		}
 		return false;
 	}
 
 	public void loadBans() {
-		AuctionHouse.getInstance().getDataManager().getBans(all -> all.forEach(this::addBan));
+		mAuction.getInstance().getDataManager().getBans(all -> all.forEach(this::addBan));
 	}
 
 	public void saveBans(boolean async) {
-		AuctionHouse.getInstance().getDataManager().saveBans(new ArrayList<>(getBans().values()), async);
+		mAuction.getInstance().getDataManager().saveBans(new ArrayList<>(getBans().values()), async);
 	}
 }
